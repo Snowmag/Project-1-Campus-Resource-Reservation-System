@@ -6,6 +6,16 @@
 
 using namespace std;
 
+ReservationManagement::ReservationManagement(){
+
+}
+
+ReservationManagement::~ReservationManagement(){
+    ReservationsList.~Reservations();
+    waitlist.~Waitlist();
+    cancellations.~CancellationHistory();
+}
+
 bool ReservationManagement::validateReservation(Reservation r){
     ReservationNode* current = ReservationsList.head;
     while(current != nullptr){
@@ -23,26 +33,43 @@ void ReservationManagement::CreateReservation(Reservation r){
         ReservationsList.Insert(r);
         return;
     }
-
-
+    waitlist.Insert(r);
 }
 
+void ReservationManagement::CancelReservation(int ID){
+    ReservationNode* node = findReservation(ID);
+
+    if (node == nullptr){
+        cout << "ERROR: Reservation not found!" << endl;
+        return;
+    }
+
+    //Copy Reservation into CancelledReservations
+    cancellations.Insert(node->reservation);
+
+    ReservationsList.Remove(node->reservation.ID);
+
+    //Waiting List Check
+    if (validateReservation(waitlist.Peek())){
+        ReservationsList.Insert(waitlist.Peek());
+        waitlist.Pop();
+    }
+    
+}
 
 //Linear search through linked list by Reservation ID
-Reservation ReservationManagement::findReservation(int ID){
+ReservationNode* ReservationManagement::findReservation(int ID){
     ReservationNode* current = ReservationsList.head;
 
     while(current != nullptr){
         if(current->reservation.ID == ID){
-            return current->reservation;
+            return current;
         }
         current = current->next;
     }
 
     //No match found
-    Reservation notFound;
-    notFound.ID = -1; //Not found = -1
-    return notFound;
+    return nullptr;
 }
 
 //Generate report of reservations
@@ -90,19 +117,21 @@ void Waitlist::Insert(Reservation r){
 
     this->head = node;
 
+    if (this->size == 0){
+        this->tail = node;
+    }
+
     this->size++;
 }
 
 //First in, Last Out
-Reservation Waitlist::Pop(){
-    Reservation r = this->tail->reservation;
+void Waitlist::Pop(){
     ReservationNode *old = this->tail;
     this->tail = this->tail->previous;
     delete old;
 
     this->size--;
-
-    return r;
+    return;
 }
 
 //The next thing to pop is always the last, peek the tail
@@ -168,15 +197,14 @@ void CancellationHistory::Insert(Reservation r){
 }
 
 //First in, First Out
-Reservation CancellationHistory::Pop(){
-    Reservation r = this->head->reservation;
+void CancellationHistory::Pop(){
     ReservationNode *old = this->head;
     this->head = this->head->next;
     delete old;
 
     this->size--;
 
-    return r;
+    return;
 }
 
 //The next thing to pop is always the first, peek the head

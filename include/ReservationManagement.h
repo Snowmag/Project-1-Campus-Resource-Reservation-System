@@ -10,10 +10,13 @@ using namespace std;
 
 class ReservationManagement{
 public:
+    ReservationManagement();
+    ~ReservationManagement();
+
     void CreateReservation(Reservation r);
-    void CancelReservation(Reservation r);
+    void CancelReservation(int ID);
     bool validateReservation(Reservation r);
-    Reservation findReservation(int ID);
+    ReservationNode* findReservation(int ID);
 
     void GenerateReport();
 
@@ -32,8 +35,7 @@ public:
 
     void Insert(Reservation r);
 
-    //Allows to grab Reservation and remove it at the same time
-    Reservation Pop();
+    void Pop();
 
     Reservation Peek();
 
@@ -54,8 +56,7 @@ public:
 
     void Insert(Reservation r);
 
-    //Allows to grab Reservation and remove it at the same time
-    Reservation Pop();
+    void Pop();
 
     Reservation Peek();
 

@@ -26,6 +26,9 @@ public:
 //List
 class Reservations{
 public:
+    Reservations();
+    ~Reservations();
+
     void Insert(Reservation r);
     void Remove(int ID);
     void Traverse();
