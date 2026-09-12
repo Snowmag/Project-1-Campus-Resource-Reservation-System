@@ -1,12 +1,40 @@
-#include "ReservationManagement.h"
+#include "include/ReservationManagement.h"
+#include "include/Reservation.h"
+
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+bool ReservationManagement::validateReservation(Reservation r){
+    ReservationNode* current = ReservationsList.head;
+    while(current != nullptr){
+        if (r.Date == current->reservation.Date && 
+            r.ResourceID == current->reservation.ResourceID){
+            return false;
+        }
+        current = current->next;
+    }
+    return true;
+};
+
+void ReservationManagement::CreateReservation(Reservation r){
+    if (validateReservation(r)){
+        ReservationsList.Insert(r);
+        return;
+    }
+
+
+}
+
 
 //Linear search through linked list by Reservation ID
 Reservation ReservationManagement::findReservation(int ID){
-    Reservation* currrent = ReservationsList.head;
+    ReservationNode* current = ReservationsList.head;
 
-    while(currrent != nullptr){
-        if(current->ID == ID){
-            return *current;
+    while(current != nullptr){
+        if(current->reservation.ID == ID){
+            return current->reservation;
         }
         current = current->next;
     }
@@ -18,17 +46,171 @@ Reservation ReservationManagement::findReservation(int ID){
 }
 
 //Generate report of reservations
-void ReservationManagment::GenerateReport(){
+void ReservationManagement::GenerateReport(){
     cout << "------Reservation Report-----" << endl;
 
     int count = 0;
-    Reservation* current = ReservationsList.head;
+    ReservationNode* current = ReservationsList.head;
     while(current != nullptr){
         count++;
         current = current->next;
     }
     cout << "Active Reservations: " << count << endl;
 
-    cout << "Waitlist Size: " << Waitlist.size() << endl;
-    cout << "Cancellation History Size: " << CancellationHistory.size() << endl;
+    cout << "Waitlist Size: " << this->waitlist.getSize() << endl;
+    cout << "Cancellation History Size: " << cancellations.getSize() << endl;
+}
+
+
+/*-------Waitlist Queue-------*/
+
+Waitlist::Waitlist(){
+    this->head = nullptr;
+    this->tail = nullptr;
+}
+
+Waitlist::~Waitlist(){
+
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        this->head = current->next;
+        delete current;
+        current = this->head;
+    }
+
+}
+
+void Waitlist::Insert(Reservation r){
+    ReservationNode *node;
+
+    node->reservation = r;
+    node->next = this->head;
+    this->head->previous = node;
+    node->previous = nullptr;
+
+    this->head = node;
+
+    this->size++;
+}
+
+//First in, Last Out
+Reservation Waitlist::Pop(){
+    Reservation r = this->tail->reservation;
+    ReservationNode *old = this->tail;
+    this->tail = this->tail->previous;
+    delete old;
+
+    this->size--;
+
+    return r;
+}
+
+//The next thing to pop is always the last, peek the tail
+Reservation Waitlist::Peek(){
+    return this->tail->reservation;
+}
+
+//First In, Last Out, start from the Tail
+void Waitlist::Display(){
+    
+    cout << "------     Waitlist     -----" << endl;
+    ReservationNode* current = this->tail;
+    while(current != nullptr){
+
+        cout    
+        //Reservation ID
+        << "[" << current->reservation.ID << "] | "
+        //Student Name & ID
+        << current->reservation.StudentName << "(" << current->reservation.StudentID << ") | "
+        //Resource ID
+        << current->reservation.ResourceID << " | "
+        //Date
+        << current->reservation.Date << endl;
+
+        current = current->previous;
+    }
+
+    cout << "-----------------------------" << endl;
+
+}
+
+int Waitlist::getSize() const{
+    return this->size;
+}
+
+/*-------Cancelation History Stack-------*/
+
+CancellationHistory::CancellationHistory(){
+    this->head = nullptr;
+}
+
+CancellationHistory::~CancellationHistory(){
+
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        this->head = current->next;
+        delete current;
+        current = this->head;
+    }
+
+}
+
+//Doesn't use Previous Pointer as its not needed
+void CancellationHistory::Insert(Reservation r){
+    ReservationNode *node;
+
+    node->reservation = r;
+    node->next = this->head;
+
+    this->head = node;
+
+    this->size++;
+}
+
+//First in, First Out
+Reservation CancellationHistory::Pop(){
+    Reservation r = this->head->reservation;
+    ReservationNode *old = this->head;
+    this->head = this->head->next;
+    delete old;
+
+    this->size--;
+
+    return r;
+}
+
+//The next thing to pop is always the first, peek the head
+Reservation CancellationHistory::Peek(){
+    return this->head->reservation;
+}
+
+//First in, First out, start from the head
+void CancellationHistory::Display(){
+    
+    cout << "------     Waitlist     -----" << endl;
+    cout << "--- Cancellation History ---" << endl;
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+
+        cout    
+        //Reservation ID
+        << "[" << current->reservation.ID << "] | "
+        //Student Name & ID
+        << current->reservation.StudentName << "(" << current->reservation.StudentID << ") | "
+        //Resource ID
+        << current->reservation.ResourceID << " | "
+        //Date
+        << current->reservation.Date << endl;
+
+        this->head = current->next;
+    }
+
+    cout << "----------------------------" << endl;
+
+    current = current->next;
+
+}
+
+int CancellationHistory::getSize() const{
+    return this->size;
 }
