@@ -1,6 +1,7 @@
 #include "Reservation.h"
 
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 using namespace std;
@@ -76,18 +77,19 @@ void Reservations::Display() {
     }
 }
 
-cout << "ResvID | StudentID | StudentName | ResourceID | Date\n"
-cout << "----------------------------------------------------\n";
-ReservationNode *current = head;
-while (current != nullptr) {
-    const Reservation &r = current->reservation;
-    cout << left
-         << setw(8) << r.ID
-         << setw(10) << r.StudentID
-         << setw(22) << r.StudentName
-         << setw(8) << r.ResourceID
-         << r.Date << "\n";
-    current = current->next;
+    cout << "ResvID | StudentID | StudentName | ResourceID | Date\n";
+    cout << "----------------------------------------------------\n";
+    ReservationNode *current = head;
+    while (current != nullptr) {
+        const Reservation &r = current->reservation;
+        cout << left
+             << setw(8) << r.ID
+             << setw(10) << r.StudentID
+             << setw(22) << r.StudentName
+             << setw(8) << r.ResourceID
+             << r.Date << "\n";
+        current = current->next;
+    }
 }
 
-int Reservations::Size() const {return size; }
+int Reservations::Size() const { return size; }

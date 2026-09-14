@@ -1,5 +1,5 @@
-#include "include/ReservationManagement.h"
-#include "include/Reservation.h"
+#include "ReservationManagement.h"
+#include "Reservation.h"
 
 #include <string>
 #include <iostream>
@@ -11,9 +11,6 @@ ReservationManagement::ReservationManagement(){
 }
 
 ReservationManagement::~ReservationManagement(){
-    ReservationsList.~Reservations();
-    waitlist.~Waitlist();
-    cancellations.~CancellationHistory();
 }
 
 bool ReservationManagement::validateReservation(Reservation r){
@@ -50,7 +47,7 @@ void ReservationManagement::CancelReservation(int ID){
     ReservationsList.Remove(node->reservation.ID);
 
     //Waiting List Check
-    if (validateReservation(waitlist.Peek())){
+    if (waitlist.getSize() > 0 && validateReservation(waitlist.Peek())){
         ReservationsList.Insert(waitlist.Peek());
         waitlist.Pop();
     }
@@ -94,6 +91,7 @@ void ReservationManagement::GenerateReport(){
 Waitlist::Waitlist(){
     this->head = nullptr;
     this->tail = nullptr;
+    this->size = 0;
 }
 
 Waitlist::~Waitlist(){
@@ -108,30 +106,39 @@ Waitlist::~Waitlist(){
 }
 
 void Waitlist::Insert(Reservation r){
-    ReservationNode *node;
+    ReservationNode *node = new ReservationNode;
 
     node->reservation = r;
     node->next = this->head;
-    this->head->previous = node;
     node->previous = nullptr;
 
-    this->head = node;
-
-    if (this->size == 0){
+    if (this->head != nullptr){
+        this->head->previous = node;
+    } else {
         this->tail = node;
     }
+
+    this->head = node;
 
     this->size++;
 }
 
 //First in, Last Out
 void Waitlist::Pop(){
+    if (this->tail == nullptr) return;
+
     ReservationNode *old = this->tail;
     this->tail = this->tail->previous;
+
+    if (this->tail != nullptr){
+        this->tail->next = nullptr;
+    } else {
+        this->head = nullptr;
+    }
+
     delete old;
 
     this->size--;
-    return;
 }
 
 //The next thing to pop is always the last, peek the tail
@@ -171,6 +178,7 @@ int Waitlist::getSize() const{
 
 CancellationHistory::CancellationHistory(){
     this->head = nullptr;
+    this->size = 0;
 }
 
 CancellationHistory::~CancellationHistory(){
@@ -186,10 +194,11 @@ CancellationHistory::~CancellationHistory(){
 
 //Doesn't use Previous Pointer as its not needed
 void CancellationHistory::Insert(Reservation r){
-    ReservationNode *node;
+    ReservationNode *node = new ReservationNode;
 
     node->reservation = r;
     node->next = this->head;
+    node->previous = nullptr;
 
     this->head = node;
 
@@ -198,13 +207,13 @@ void CancellationHistory::Insert(Reservation r){
 
 //First in, First Out
 void CancellationHistory::Pop(){
+    if (this->head == nullptr) return;
+
     ReservationNode *old = this->head;
     this->head = this->head->next;
     delete old;
 
     this->size--;
-
-    return;
 }
 
 //The next thing to pop is always the first, peek the head
@@ -214,13 +223,12 @@ Reservation CancellationHistory::Peek(){
 
 //First in, First out, start from the head
 void CancellationHistory::Display(){
-    
-    cout << "------     Waitlist     -----" << endl;
+
     cout << "--- Cancellation History ---" << endl;
     ReservationNode* current = this->head;
     while(current != nullptr){
 
-        cout    
+        cout
         //Reservation ID
         << "[" << current->reservation.ID << "] | "
         //Student Name & ID
@@ -230,12 +238,10 @@ void CancellationHistory::Display(){
         //Date
         << current->reservation.Date << endl;
 
-        this->head = current->next;
+        current = current->next;
     }
 
     cout << "----------------------------" << endl;
-
-    current = current->next;
 
 }
 
