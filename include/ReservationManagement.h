@@ -4,28 +4,9 @@
 #include <string>
 #include <queue>
 #include <stack>
-#include "include/Reservation.h"
+#include "Reservation.h"
 
 using namespace std;
-
-class ReservationManagement{
-public:
-    ReservationManagement();
-    ~ReservationManagement();
-
-    void CreateReservation(Reservation r);
-    void CancelReservation(int ID);
-    bool validateReservation(Reservation r);
-    ReservationNode* findReservation(int ID);
-
-    void GenerateReport();
-
-private:
-    Reservations ReservationsList;
-    Waitlist waitlist;
-    CancellationHistory cancellations;
-
-};
 
 /* Waitlist & CancellationHistory Classes*/
 class Waitlist{
@@ -67,6 +48,25 @@ public:
 private:
     ReservationNode *head;
     int size;
+};
+
+class ReservationManagement{
+public:
+    ReservationManagement();
+    ~ReservationManagement();
+
+    void CreateReservation(Reservation r);
+    void CancelReservation(int ID);
+    bool validateReservation(Reservation r);
+    ReservationNode* findReservation(int ID);
+
+    void GenerateReport();
+
+private:
+    Reservations ReservationsList;
+    Waitlist waitlist;
+    CancellationHistory cancellations;
+
 };
 
 #endif
