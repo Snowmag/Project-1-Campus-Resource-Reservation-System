@@ -75,7 +75,7 @@ void Reservations::Display() {
         cout << "No active reservations.\n";
         return;
     }
-}
+
 
     cout << "ResvID | StudentID | StudentName | ResourceID | Date\n";
     cout << "----------------------------------------------------\n";
