@@ -1,5 +1,4 @@
 #include "ReservationManagement.h"
-#include "Reservation.h"
 
 #include <string>
 #include <iostream>
@@ -8,120 +7,103 @@
 
 using namespace std;
 
-//helpers
-namespace {
-
-string trim(const string &s) {
-    size_t start = s.find_first_not_of(" \t\n\r");
-    if (start == string::npos) return "";   //line was entirely whitespace
-    size_t end = s.find_last_not_of(" \t\n\r");
+// Strip surrounding whitespace and a trailing '\r' (Windows-edited files).
+static string trimField(string s){
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end   = s.find_last_not_of(" \t\r\n");
+    if (start == string::npos) return "";
     return s.substr(start, end - start + 1);
 }
 
-}
-
-//namespace
-
 ReservationManagement::ReservationManagement(){
-    this->nextID = 1;
+
 }
 
 ReservationManagement::~ReservationManagement(){
 }
 
-//Reads "ResvID|StudentID|StudentName|ResourceID|Date" records from file
-void ReservationManagement::LoadReservations(const string &filename){
-    ifstream in(filename);
-    if (!in.is_open()){
-        cerr << "Error: could not open reservation file '" << filename << "'.\n";
-        return;
+// Load reservations from a '|' delimited file:
+//   ID|StudentID|StudentName|ResourceID|Date
+// Each record runs through CreateReservation, so duplicate IDs are rejected and
+// resource/date clashes are pushed to the waiting list automatically.
+// Returns the number of records placed into the active reservation list.
+int ReservationManagement::LoadReservations(const string& filename){
+    ifstream file(filename);
+    if (!file.is_open()){
+        cout << "ERROR: Could not open reservation file: " << filename << endl;
+        return 0;
     }
 
+    int active = 0, waitlisted = 0, skipped = 0, lineNo = 0;
     string line;
-    int loaded = 0;
-    while (getline(in, line)){
-        line = trim(line);
-        if (line.empty()) continue;
+    while (getline(file, line)){
+        lineNo++;
+        if (line.empty() || line[0] == '#') continue;
 
-        // Split on '|'
-        string fields[5];
-        int fieldCount = 0;
         stringstream ss(line);
-        string field;
-        while (fieldCount < 5 && getline(ss, field, '|')){
-            fields[fieldCount++] = trim(field);
-        }
-        if (fieldCount != 5){
-            cerr << "Warning: skipping malformed reservation line: " << line << "\n";
+        string id, sid, name, res, date;
+        if (!getline(ss, id,   '|') ||
+            !getline(ss, sid,  '|') ||
+            !getline(ss, name, '|') ||
+            !getline(ss, res,  '|') ||
+            !getline(ss, date, '|')){
+            cout << "WARNING: Skipping malformed reservation on line " << lineNo << endl;
+            skipped++;
             continue;
         }
 
         Reservation r;
         try {
-            r.ID        = stoi(fields[0]);
-            r.StudentID = stoi(fields[1]);
-        } catch (const exception &) {
-            cerr << "Warning: skipping reservation line with a non-numeric ID: " << line << "\n";
+            r.ID        = stoi(trimField(id));
+            r.StudentID = stoi(trimField(sid));
+        } catch (...) {
+            cout << "WARNING: Bad numeric field on line " << lineNo << endl;
+            skipped++;
             continue;
         }
-        r.StudentName = fields[2];
-        r.ResourceID  = fields[3];
-        r.Date        = fields[4];
+        r.StudentName = trimField(name);
+        r.ResourceID  = trimField(res);
+        r.Date        = trimField(date);
 
-        //Duplicate reservation IDs are rejected
-        if (reservationIDExists(r.ID)){
-            cerr << "Warning: skipping duplicate reservation ID " << r.ID << ".\n";
-            continue;
+        switch (CreateReservation(r)){
+            case ReservationStatus::Created:     active++;     break;
+            case ReservationStatus::Waitlisted:  waitlisted++; break;
+            case ReservationStatus::DuplicateID: skipped++;    break;
         }
-
-        ReservationsList.Insert(r);
-        if (r.ID >= this->nextID) this->nextID = r.ID + 1;
-        ++loaded;
     }
-    in.close();
-    cout << "Loaded " << loaded << " reservations from " << filename << ".\n";
+    file.close();
+
+    if (waitlisted > 0 || skipped > 0){
+        cout << "  (" << waitlisted << " waitlisted, " << skipped << " skipped)" << endl;
+    }
+    return active;
 }
 
-//A resource may not be booked twice on the same date
 bool ReservationManagement::validateReservation(Reservation r){
     ReservationNode* current = ReservationsList.head;
     while(current != nullptr){
-        if (r.Date == current->reservation.Date && 
+        if (r.Date == current->reservation.Date &&
             r.ResourceID == current->reservation.ResourceID){
             return false;
         }
         current = current->next;
     }
     return true;
-}
+};
 
-bool ReservationManagement::reservationIDExists(int ID){
-    return findReservation(ID) != nullptr;
-}
-
-void ReservationManagement::CreateReservation(Reservation r){
-    //An ID of 0 means "assign the next free one"
-    if (r.ID <= 0){
-        r.ID = this->nextID;
+ReservationStatus ReservationManagement::CreateReservation(Reservation r){
+    // Prevent duplicate reservation IDs among active reservations.
+    if (findReservation(r.ID) != nullptr){
+        return ReservationStatus::DuplicateID;
     }
-
-    if (reservationIDExists(r.ID)){
-        cout << "ERROR: Reservation ID " << r.ID << " is already in use!" << endl;
-        return;
-    }
-
-    if (r.ID >= this->nextID) this->nextID = r.ID + 1;
 
     if (validateReservation(r)){
         ReservationsList.Insert(r);
-        cout << "Reservation Created Successfully. (ID " << r.ID << ")" << endl;
-        return;
+        return ReservationStatus::Created;
     }
 
-    //Resource is taken on that date, so the request queues up instead
     waitlist.Insert(r);
-    cout << "Resource unavailable on " << r.Date
-         << ". Added to the waiting list. (ID " << r.ID << ")" << endl;
+    return ReservationStatus::Waitlisted;
 }
 
 void ReservationManagement::CancelReservation(int ID){
@@ -133,41 +115,40 @@ void ReservationManagement::CancelReservation(int ID){
     }
 
     //Copy Reservation into CancelledReservations
-    Reservation cancelled = node->reservation;
-    cancellations.Insert(cancelled);
+    cancellations.Insert(node->reservation);
 
-    ReservationsList.Remove(cancelled.ID);
-    cout << "Reservation Cancelled." << endl;
-    cout << "Added to cancellation history." << endl;
+    ReservationsList.Remove(node->reservation.ID);
+    cout << "Reservation Cancelled. Added to cancellation history." << endl;
 
-    //Waiting List Check: hand the freed slot to the next student in line
-    if (!waitlist.isEmpty() && validateReservation(waitlist.Peek())){
-        Reservation next = waitlist.Peek();
+    //Waiting List Check - promote the oldest waiting request if the freed
+    //resource/date now satisfies it.
+    if (waitlist.getSize() > 0 && validateReservation(waitlist.Peek())){
+        Reservation promoted = waitlist.Peek();
+        ReservationsList.Insert(promoted);
         waitlist.Pop();
-        ReservationsList.Insert(next);
-        cout << "Waiting list: reservation " << next.ID << " for "
-             << next.StudentName << " is now active." << endl;
+        cout << "Waitlisted reservation [" << promoted.ID
+             << "] has been assigned the freed resource." << endl;
     }
-    
 }
 
-//Restores the most recently cancelled reservation (top of the stack)
+// Restore the most recently cancelled reservation (stack / undo behaviour).
 void ReservationManagement::UndoCancellation(){
-    if (cancellations.isEmpty()){
+    if (cancellations.getSize() == 0){
         cout << "ERROR: No cancellations to undo!" << endl;
         return;
     }
 
     Reservation r = cancellations.Peek();
-    cancellations.Pop();
 
-    if (reservationIDExists(r.ID)){
-        cout << "ERROR: Reservation " << r.ID << " is already active!" << endl;
-        return;
+    // Only restore if the resource is still free for that date.
+    if (validateReservation(r)){
+        ReservationsList.Insert(r);
+        cancellations.Pop();
+        cout << "Reservation Restored Successfully." << endl;
+    } else {
+        cout << "ERROR: Cannot restore reservation [" << r.ID
+             << "] - resource is already booked for " << r.Date << "." << endl;
     }
-
-    ReservationsList.Insert(r);
-    cout << "Reservation Restored Successfully." << endl;
 }
 
 //Linear search through linked list by Reservation ID
@@ -193,7 +174,7 @@ void ReservationManagement::DisplayWaitlist(){
     waitlist.Display();
 }
 
-void ReservationManagement::DisplayCancellationHistory(){
+void ReservationManagement::DisplayCancellations(){
     cancellations.Display();
 }
 
@@ -201,7 +182,13 @@ void ReservationManagement::DisplayCancellationHistory(){
 void ReservationManagement::GenerateReport(){
     cout << "------Reservation Report-----" << endl;
 
-    cout << "Active Reservations: " << ReservationsList.Size() << endl;
+    int count = 0;
+    ReservationNode* current = ReservationsList.head;
+    while(current != nullptr){
+        count++;
+        current = current->next;
+    }
+    cout << "Active Reservations: " << count << endl;
 
     cout << "Waitlist Size: " << this->waitlist.getSize() << endl;
     cout << "Cancellation History Size: " << cancellations.getSize() << endl;
@@ -227,7 +214,6 @@ Waitlist::~Waitlist(){
 
 }
 
-//New arrivals go on at the head, so the oldest request sits at the tail
 void Waitlist::Insert(Reservation r){
     ReservationNode *node = new ReservationNode;
 
@@ -246,7 +232,7 @@ void Waitlist::Insert(Reservation r){
     this->size++;
 }
 
-//First In, First Out: the oldest request leaves first
+//Oldest request lives at the tail, so remove from the tail (FIFO).
 void Waitlist::Pop(){
     if (this->tail == nullptr) return;
 
@@ -264,25 +250,24 @@ void Waitlist::Pop(){
     this->size--;
 }
 
-//The next thing to pop is always the last, peek the tail
+//The next thing to serve is always the oldest, peek the tail
 Reservation Waitlist::Peek(){
-    if (this->tail == nullptr) return Reservation();
     return this->tail->reservation;
 }
 
-//First In, First Out, start from the Tail
+//FIFO order, start from the Tail (oldest) toward the head (newest)
 void Waitlist::Display(){
-    
+
     cout << "------     Waitlist     -----" << endl;
-    if (this->head == nullptr){
-        cout << "The waiting list is empty." << endl;
-        cout << "-----------------------------" << endl;
-        return;
+
+    if (this->tail == nullptr){
+        cout << "(empty)" << endl;
     }
+
     ReservationNode* current = this->tail;
     while(current != nullptr){
 
-        cout    
+        cout
         //Reservation ID
         << "[" << current->reservation.ID << "] | "
         //Student Name & ID
@@ -297,10 +282,6 @@ void Waitlist::Display(){
 
     cout << "-----------------------------" << endl;
 
-}
-
-bool Waitlist::isEmpty() const{
-    return this->size == 0;
 }
 
 int Waitlist::getSize() const{
@@ -338,7 +319,7 @@ void CancellationHistory::Insert(Reservation r){
     this->size++;
 }
 
-//Last In, First Out: the newest cancellation is removed first
+//Most recent cancellation sits at the head, remove from the head (LIFO).
 void CancellationHistory::Pop(){
     if (this->head == nullptr) return;
 
@@ -349,21 +330,20 @@ void CancellationHistory::Pop(){
     this->size--;
 }
 
-//The next thing to pop is always the first, peek the head
+//The next thing to restore is always the most recent, peek the head
 Reservation CancellationHistory::Peek(){
-    if (this->head == nullptr) return Reservation();
     return this->head->reservation;
 }
 
-//Last In, First Out, start from the head
+//LIFO order, start from the head (most recent) toward the oldest
 void CancellationHistory::Display(){
 
     cout << "--- Cancellation History ---" << endl;
+
     if (this->head == nullptr){
-        cout << "No cancellations recorded." << endl;
-        cout << "----------------------------" << endl;
-        return;
+        cout << "(empty)" << endl;
     }
+
     ReservationNode* current = this->head;
     while(current != nullptr){
 
@@ -382,10 +362,6 @@ void CancellationHistory::Display(){
 
     cout << "----------------------------" << endl;
 
-}
-
-bool CancellationHistory::isEmpty() const{
-    return this->size == 0;
 }
 
 int CancellationHistory::getSize() const{

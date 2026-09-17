@@ -1,170 +1,135 @@
+#include "Reservation.h"
+#include "ReservationManagement.h"
+#include "Resource.h"
+
 #include <iostream>
 #include <string>
-
-#include "Resource.h"
-#include "ReservationManagement.h"
+#include <limits>
 
 using namespace std;
 
-namespace {
+/* ---------- small input helpers (basic validation) ---------- */
 
-string trim(const string &s) {
-    size_t start = s.find_first_not_of(" \t\r\n");
-    if (start == string::npos) return "";
-    size_t end = s.find_last_not_of(" \t\r\n");
-    return s.substr(start, end - start + 1);
-
-}
-
-string readLine(const string &prompt) {
-    cout << prompt;
-    string line;
-    getline(cin, line);
-    return trim(line);
-}
-
-int readInt(const string &prompt) {
-    while (true) {
-        string line = readLine(prompt);
-        try {
-            size_t pos = 0;
-            int value = stoi(line, &pos);
-            if (pos == line.size()) return value;
-        } catch (const exception &) { /* fall through */ }
-        cout << " Please enter a valid whole number.\n";
-    }
-}
-
-void printMenu() {
-    cout << "\n=====Campus Resource Reservation System=====\n";
-    cout << "1. View Resources\n";
-    cout << "2. Create Reservation\n";
-    cout << "3. Cancel Reservation\n";
-    cout << "4. View Reservations\n";
-    cout << "5. View Waitlist\n";
-    cout << "6. Undo Cancellation\n";
-    cout << "7. Search Reservations\n";
-    cout << "8. Sort Resources\n";
-    cout << "9. Generate Report\n";
-    cout << "0. Exit\n";
-    cout << "Enter Choice: ";
-}
-
-// Option 1: View Resources
-void handleViewResources(Resources &resources) {
-    cout << "\n1. List all 2. Find by ID\n";
-    string c = readLine("Enter Choice: ");
-    if (c == "1") {
-        resources.DisplayResources();
-    } else if (c == "2") {
-        Resource *r = resources.findResource(readLine("Enter Resource ID: "));
-        if (r == nullptr) {
-            cout << "Resource not found.\n";
-        } else {
-            cout << "Found: " << r->toDisplayString() << "\n";
+// Read an integer, re-prompting on bad input. On end-of-input, returns 9
+// so a piped/closed stdin cleanly exits the menu.
+static int readInt(const string& prompt){
+    int value;
+    while (true){
+        cout << prompt;
+        if (cin >> value){
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            return value;
         }
-    } else {
-        cout << "Invalid choice.\n";
+        if (cin.eof()){
+            cout << endl;
+            return 9;
+        }
+        cout << "Invalid input. Please enter a number." << endl;
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
     }
 }
 
-// Option 2: Create Reservation
-void handleCreate(Resources &resources, ReservationManagement &manager) {
-    cout << "\n---- Create Reservation ----\n";
-    int studentId = readInt("Enter Student ID: ");
-    string name = readLine("Enter Student Name: ");
-    string resId = readLine("Enter Resource ID: ");
-    string date = readLine("Enter Reservation Date (MM/DD/YYYY): ");
+static string readLine(const string& prompt){
+    cout << prompt;
+    string value;
+    getline(cin, value);
+    return value;
+}
 
-    if (name.empty() || resId.empty()) {
-        cout << "Name and Resource ID cannot be empty.\n";
+/* ---------- menu actions ---------- */
+
+static void createReservation(ReservationManagement& manager, Resources& resources){
+    cout << "\n----- Create Reservation -----" << endl;
+
+    int resID       = readInt("Reservation ID: ");
+    int studentID   = readInt("Student ID: ");
+    string name     = readLine("Student Name: ");
+    string resource = readLine("Resource ID: ");
+
+    // Error handling: reject unknown resources before creating anything.
+    if (resources.findResource(resource) == nullptr){
+        cout << "ERROR: Resource ID '" << resource << "' does not exist." << endl;
         return;
     }
-    if (resources.findResource(resId) == nullptr) {
-        cout << "Error: Invalid Resource ID '" << resId << "'.\n";
-        return;
-    }
-    if (date.empty()) date = "N/A"; // Default date if not provided
+
+    string date = readLine("Reservation Date (MM/DD/YYYY): ");
 
     Reservation r;
-    r.ID = 0;                       // 0 asks the manager for the next free ID
-    r.StudentID = studentId;
+    r.ID          = resID;
+    r.StudentID   = studentID;
     r.StudentName = name;
-    r.ResourceID = resId;
-    r.Date = date;
-    manager.CreateReservation(r);
-}
+    r.ResourceID  = resource;
+    r.Date        = date;
 
-// Option 8: Sort Resources
-void handleSort(Resources &resources) {
-    cout << "\n1. By ID 2. By Name 3. By Type\n";
-    string c = readLine("Enter Choice: ");
-    if (c == "1")
-        resources.SortList("id");
-    else if (c == "2")
-        resources.SortList("name");
-    else if (c == "3")
-        resources.SortList("type");
-    else {
-        cout << "Invalid choice.\n";
-        return;
-    }
-    resources.DisplayResources();
-}
-
-}
-
-// namespace
-
-int main(int argc, char **argv) {
-    string resourcesFile = (argc > 1) ? argv[1] : "data/resources.txt";
-    string reservationsFile = (argc > 2) ? argv[2] : "data/reservations.txt";
-
-    cout << "Initializing Campus Resource Reservation System...\n";
-
-    Resources resources;
-    resources.LoadResources(resourcesFile);
-
-    ReservationManagement manager;
-    manager.LoadReservations(reservationsFile);
-
-    while(true) {
-        printMenu();
-        string choice = readLine("");
-
-        if (choice == "1")  {
-            handleViewResources(resources);
-        } else if (choice == "2") {
-            handleCreate(resources, manager);
-        } else if (choice == "3") {
-            manager.CancelReservation(readInt("Enter Reservation ID to cancel: "));
-        } else if (choice == "4") {
-            manager.DisplayReservations();
-        } else if (choice == "5") {
-            manager.DisplayWaitlist();
-        } else if (choice == "6") {
-            manager.UndoCancellation();
-        } else if (choice == "7") {
-            ReservationNode *node = manager.findReservation(readInt("Enter Reservation ID to search: "));
-            if (node == nullptr) {
-                cout << "Reservation not found.\n";
-            } else {
-                const Reservation &r = node->reservation;
-                cout << "Found [" <<r.ID << "] " << r.StudentName
-                     << " [" << r.StudentID << "] " << r.ResourceID
-                     << " | " << r.Date << "\n";
-
-            }
-        } else if (choice == "8") {
-            handleSort(resources);
-        } else if (choice == "9") {
-            manager.GenerateReport();
-        } else if (choice == "0") {
-            cout << "Exiting...\n";
+    switch (manager.CreateReservation(r)){
+        case ReservationStatus::Created:
+            cout << "Reservation Created Successfully." << endl;
             break;
-        } else {
-            cout << "Invalid choice. Please try again.\n";
+        case ReservationStatus::Waitlisted:
+            cout << "Resource is booked for that date. Added to Waiting List." << endl;
+            break;
+        case ReservationStatus::DuplicateID:
+            cout << "ERROR: A reservation with ID " << resID << " already exists." << endl;
+            break;
+    }
+}
+
+static void cancelReservation(ReservationManagement& manager){
+    cout << "\n----- Cancel Reservation -----" << endl;
+    int id = readInt("Reservation ID: ");
+    manager.CancelReservation(id);   // prints its own success / error message
+}
+
+/* ---------- menu ---------- */
+
+static void printMenu(){
+    cout << "\n===== Campus Resource Reservation System =====" << endl;
+    cout << "1. View Resources"            << endl;
+    cout << "2. Create Reservation"        << endl;
+    cout << "3. Cancel Reservation"        << endl;
+    cout << "4. View Active Reservations"  << endl;
+    cout << "5. View Waiting List"         << endl;
+    cout << "6. View Cancellation History" << endl;
+    cout << "7. Undo Cancellation"         << endl;
+    cout << "8. Generate Report"           << endl;
+    cout << "9. Exit"                      << endl;
+}
+
+int main(){
+    Resources resources;
+    ReservationManagement manager;
+
+    // Load the resource inventory. Path is relative to where you run the program;
+    // run from the Project1/ folder so "data/resources.txt" resolves.
+    if (!resources.LoadResources("data/resources.txt")){
+        cout << "WARNING: Continuing with an empty resource list." << endl;
+    } else {
+        cout << "Loaded " << resources.getCount() << " resources." << endl;
+    }
+
+    // Load any pre-existing reservations from file.
+    int loadedReservations = manager.LoadReservations("data/reservations.txt");
+    cout << "Loaded " << loadedReservations << " reservations." << endl;
+
+    while (true){
+        printMenu();
+        int choice = readInt("Enter Choice: ");
+
+        switch (choice){
+            case 1: resources.DisplayResources();          break;
+            case 2: createReservation(manager, resources); break;
+            case 3: cancelReservation(manager);            break;
+            case 4: manager.DisplayReservations();         break;
+            case 5: manager.DisplayWaitlist();             break;
+            case 6: manager.DisplayCancellations();        break;
+            case 7: manager.UndoCancellation();            break;
+            case 8: manager.GenerateReport();              break;
+            case 9:
+                cout << "Goodbye!" << endl;
+                return 0;
+            default:
+                cout << "Invalid choice. Please select 1-9." << endl;
         }
     }
-    return 0;
 }

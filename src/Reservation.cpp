@@ -1,95 +1,103 @@
 #include "Reservation.h"
 
-#include <iomanip>
 #include <iostream>
-#include <sstream>
 
 using namespace std;
 
-Reservations::Reservations () : head(nullptr), tail(nullptr), size(0) {}
+// The header does not initialise head/tail, so the constructor must.
+Reservations::Reservations(){
+    this->head = nullptr;
+    this->tail = nullptr;
+}
 
-Reservations::~Reservations () {
-    ReservationNode *current = head;
-    while (current != nullptr) {
-        ReservationNode *next = current->next;
+// Free every node so the list does not leak.
+Reservations::~Reservations(){
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        ReservationNode* next = current->next;
         delete current;
         current = next;
     }
-    head = tail = nullptr;
-    size = 0;
+    this->head = nullptr;
+    this->tail = nullptr;
 }
 
-//Append at the tail
-void Reservations::Insert(Reservation r) {
-    ReservationNode *node = new ReservationNode;
+// Insert a reservation at the tail (keeps records in creation order). O(1)
+void Reservations::Insert(Reservation r){
+    ReservationNode* node = new ReservationNode;
     node->reservation = r;
     node->next = nullptr;
-    node->previous = tail;
+    node->previous = this->tail;
 
-    if (tail != nullptr) {
-        tail->next = node;
+    if (this->tail != nullptr){
+        this->tail->next = node;
     } else {
-        head = node;
+        this->head = node;      // list was empty
     }
-    tail = node;
-
-    size++;
+    this->tail = node;
 }
 
-//Remove by ID
-void Reservations::Remove(int ID) {
-    ReservationNode *current = head;
-    while (current != nullptr) {
-        if (current->reservation.ID == ID) {
-            if (current->previous != nullptr) {
+// Remove the first reservation whose ID matches. O(n)
+void Reservations::Remove(int ID){
+    ReservationNode* current = this->head;
+
+    while(current != nullptr){
+        if (current->reservation.ID == ID){
+            // relink the previous neighbour
+            if (current->previous != nullptr){
                 current->previous->next = current->next;
             } else {
-                head = current->next;
+                this->head = current->next;   // removing the head
             }
-
-            if (current->next != nullptr) {
+            // relink the next neighbour
+            if (current->next != nullptr){
                 current->next->previous = current->previous;
             } else {
-                tail = current->previous;
+                this->tail = current->previous; // removing the tail
             }
-
             delete current;
-            size--;
             return;
         }
         current = current->next;
     }
 }
 
-void Reservations::Traverse() {
-    ReservationNode *current = head;
-    while (current != nullptr) {
-        cout << "ID: " << current->reservation.ID << (current->next != nullptr ? " -> " : "\n");
-        current = current->next;
-    }
-}
-
-void Reservations::Display() {
-    cout << "\n-----Active Reservations (" << size << ")-----\n";
-    if (head == nullptr) {
-        cout << "No active reservations.\n";
+// Walk the whole list front to back (compact view). O(n)
+void Reservations::Traverse(){
+    ReservationNode* current = this->head;
+    if (current == nullptr){
+        cout << "(empty)" << endl;
         return;
     }
-
-
-    cout << "ResvID | StudentID | StudentName | ResourceID | Date\n";
-    cout << "----------------------------------------------------\n";
-    ReservationNode *current = head;
-    while (current != nullptr) {
-        const Reservation &r = current->reservation;
-        cout << left
-             << setw(8) << r.ID
-             << setw(10) << r.StudentID
-             << setw(22) << r.StudentName
-             << setw(8) << r.ResourceID
-             << r.Date << "\n";
+    while(current != nullptr){
+        cout << current->reservation.ID;
+        if (current->next != nullptr) cout << " -> ";
         current = current->next;
     }
+    cout << endl;
 }
 
-int Reservations::Size() const { return size; }
+// Pretty-print every active reservation. O(n)
+void Reservations::Display(){
+    cout << "-----   Active Reservations   -----" << endl;
+
+    if (this->head == nullptr){
+        cout << "(none)" << endl;
+    }
+
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        cout
+        //Reservation ID
+        << "[" << current->reservation.ID << "] | "
+        //Student Name & ID
+        << current->reservation.StudentName << "(" << current->reservation.StudentID << ") | "
+        //Resource ID
+        << current->reservation.ResourceID << " | "
+        //Date
+        << current->reservation.Date << endl;
+
+        current = current->next;
+    }
+    cout << "-----------------------------------" << endl;
+}

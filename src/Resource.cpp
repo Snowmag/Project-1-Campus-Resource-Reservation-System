@@ -1,170 +1,118 @@
 #include "Resource.h"
 
-#include <fstream>
 #include <iostream>
-#include <iomanip>
+#include <fstream>
 #include <sstream>
+#include <iomanip>
 #include <cctype>
 
 using namespace std;
 
-//helpers
-namespace {
-
-string trim(const string &s) {
-    size_t start = s.find_first_not_of(" \t\n\r");
-    if (start == string::npos) return "";   //line was entirely whitespace
-    size_t end = s.find_last_not_of(" \t\n\r");
+// Strip surrounding whitespace and a trailing '\r' (Windows-edited files).
+static string trim(string s){
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end   = s.find_last_not_of(" \t\r\n");
+    if (start == string::npos) return "";
     return s.substr(start, end - start + 1);
 }
 
-string toLower(const string &s) {
-    string out = s;
-    for (char &c : out) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
-    return out;
+Resources::Resources(){
+    // std::vector self-initialises to empty; nothing else needed.
 }
 
-}
-
-//namespace
-
-//Student
-Student::Student() : ID(0), Name("") {}
-Student::Student(int id, const string &name) : ID(id), Name(name) {}
-
-int Student::getID() const { return ID; }
-string Student::getName() const { return Name; }
-
-//Resource
-
-Resource::Resource() : ID(""), Name(""), Type(""), Availability(false) {}
-Resource::Resource(const string &id, const string &name, const string &type, bool availability)
-    : ID(id), Name(name), Type(type), Availability(availability) {}
-
-string Resource::getID()           const { return ID; }
-string Resource::getName()         const { return Name; }
-string Resource::getType()         const { return Type; }
-bool   Resource::getAvailability() const { return Availability; }
-void   Resource::setAvailability(bool value) { Availability = value; }
-
-string Resource::availabilityText() const {
-    return Availability ? "Available" : "Unavailable";
-}
-
-string Resource::toDisplayString() const {
-    ostringstream out;
-    out << left
-        << setw(8)  << ID
-        << setw(24) << Name
-        << setw(24) << Type
-        << availabilityText();
-    return out.str();
-}
-
-
-void Resources::LoadResources(const string &filename) {
-    ifstream in(filename);
-    if (!in.is_open()) {
-        cerr << "Error: could not open resource file '" << filename << "'.\n";
-        return;
+// Load resources from a '|' delimited file:  ID|Name|Type|Availability
+// Availability: 1 = available, 0 = unavailable. Lines starting with # are ignored.
+// Returns false if the file cannot be opened.
+bool Resources::LoadResources(const string& filename){
+    ifstream file(filename);
+    if (!file.is_open()){
+        cout << "ERROR: Could not open resource file: " << filename << endl;
+        return false;
     }
-    string line;
-    int loaded = 0;
-    while (getline(in, line)) {
-        line = trim(line);
-        if (line.empty()) continue;
 
-        // Split on '|'
-        string fields[4];
-        int fieldCount = 0;
+    this->ResourceList.clear();
+
+    string line;
+    int lineNo = 0;
+    while (getline(file, line)){
+        lineNo++;
+
+        // skip blank lines and comments
+        if (line.empty() || line[0] == '#') continue;
+
         stringstream ss(line);
-        string field;
-        while (fieldCount < 4 && getline(ss, field, '|')) {
-            fields[fieldCount++] = trim(field);
-        }
-        if (fieldCount != 4) {
-            cerr << "Warning: skipping malformed resource line: " << line << "\n";
+        string id, name, type, avail;
+
+        if (!getline(ss, id, '|') ||
+            !getline(ss, name, '|') ||
+            !getline(ss, type, '|') ||
+            !getline(ss, avail, '|')){
+            cout << "WARNING: Skipping malformed line " << lineNo << endl;
             continue;
         }
-        bool available = (toLower(fields[3]) == "available");
-        resourceList.emplace_back(fields[0], fields[1], fields[2], available);
-        ++loaded;
+
+        Resource r;
+        r.ID   = trim(id);
+        r.Name = trim(name);
+        r.Type = trim(type);
+
+        // Accept the word "Available" (any case) as well as 1 / true.
+        string a = trim(avail);
+        for (char& c : a) c = (char)tolower(c);
+        r.Availability = (a == "available" || a == "1" || a == "true");
+
+        this->ResourceList.push_back(r);
     }
-    in.close();
-    cout << "Loaded " << loaded << " resources from " << filename << ".\n";
+
+    file.close();
+    return true;
 }
 
-void Resources::DisplayResources() const {
-    cout << "\n----- Campus Resources (" << resourceList.size() << ") -----\n";
-    cout << "ID      Name                    Type                    Status\n";
-    cout << "-------------------------------------------------------------------\n";
-    if (resourceList.empty()) {
-        cout << "No resources loaded.\n";
+// Display every resource in a simple aligned table.
+void Resources::DisplayResources() const{
+    cout << "========================  Campus Resources  ==========================" << endl;
+
+    if (this->ResourceList.empty()){
+        cout << "(no resources loaded)" << endl;
+        cout << "======================================================================" << endl;
         return;
     }
-    for (const Resource &r : resourceList) {
-        cout << r.toDisplayString() << "\n";
+
+    cout << left
+         << setw(8)  << "ID"
+         << setw(28) << "Name"
+         << setw(24) << "Type"
+         << "Availability" << endl;
+    cout << "----------------------------------------------------------------------" << endl;
+
+    for (const Resource& r : this->ResourceList){
+        cout << left
+             << setw(8)  << r.ID
+             << setw(28) << r.Name
+             << setw(24) << r.Type
+             << (r.Availability ? "Available" : "Unavailable") << endl;
     }
+    cout << "======================================================================" << endl;
 }
 
-//Linear search across the inventory
-Resource *Resources::findResource(const string &ID) {
-    for (Resource &r : resourceList) {
-        if (r.getID() == ID) return &r;   // live pointer into the vector
+// Linear search by resource ID. Returns nullptr if not found.
+Resource* Resources::findResource(const string& ID){
+    for (Resource& r : this->ResourceList){
+        if (r.ID == ID){
+            return &r;
+        }
     }
     return nullptr;
 }
 
-//Ordering rule used by the merge sort below
-bool Resources::Precedes(const Resource &a, const Resource &b, const string &criteria) {
-    if (criteria == "name") return a.getName() < b.getName();
-    if (criteria == "type") return a.getType() < b.getType();
-    return a.getID() < b.getID();
+// Flip a resource's availability flag. Returns false if the ID is unknown.
+bool Resources::setAvailability(const string& ID, bool available){
+    Resource* r = findResource(ID);
+    if (r == nullptr) return false;
+    r->Availability = available;
+    return true;
 }
 
-//Merges the two sorted halves
-void Resources::Merge(int left, int mid, int right, const string &criteria) {
-    vector<Resource> merged;
-    merged.reserve(static_cast<size_t>(right - left + 1));
-
-    int i = left;
-    int j = mid + 1;
-
-    while (i <= mid && j <= right) {
-        if (Precedes(resourceList[j], resourceList[i], criteria)) {
-            merged.push_back(resourceList[j++]);
-        } else {
-            merged.push_back(resourceList[i++]);   //keeps the sort stable
-        }
-    }
-    while (i <= mid)   merged.push_back(resourceList[i++]);
-    while (j <= right) merged.push_back(resourceList[j++]);
-
-    for (size_t k = 0; k < merged.size(); ++k) {
-        resourceList[left + static_cast<int>(k)] = merged[k];
-    }
+int Resources::getCount() const{
+    return (int)this->ResourceList.size();
 }
-
-//Merge sort: O(n log n) comparisons
-void Resources::MergeSort(int left, int right, const string &criteria) {
-    if (left >= right) return;
-    int mid = left + (right - left) / 2;
-    MergeSort(left, mid, criteria);
-    MergeSort(mid + 1, right, criteria);
-    Merge(left, mid, right, criteria);
-}
-
-void Resources::SortList(const string &criteria) {
-    string key = toLower(trim(criteria));
-
-    if (key != "id" && key != "name" && key != "type") {
-        cout << "Unknown sort criteria '" << criteria << "'.\n";
-        return;
-    }
-    if (resourceList.size() > 1) {
-        MergeSort(0, static_cast<int>(resourceList.size()) - 1, key);
-    }
-    cout << "Resources sorted by " << key << ".\n";
-}
-
-int Resources::getSize() const { return static_cast<int>(resourceList.size()); }
