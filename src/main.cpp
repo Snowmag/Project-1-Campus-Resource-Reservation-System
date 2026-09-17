@@ -57,11 +57,12 @@ void handleViewResources(Resources &resources) {
     if (c == "1") {
         resources.DisplayResources();
     } else if (c == "2") {
-        Rescource *r = resources.findResource(readLine("Enter Resource ID: "));
+        Resource *r = resources.findResource(readLine("Enter Resource ID: "));
         if (r == nullptr) {
             cout << "Resource not found.\n";
-        else
+        } else {
             cout << "Found: " << r->toDisplayString() << "\n";
+        }
     } else {
         cout << "Invalid choice.\n";
     }
@@ -85,8 +86,8 @@ void handleCreate(Resources &resources, ReservationManagement &manager) {
     }
     if (date.empty()) date = "N/A"; // Default date if not provided
 
-    Reserrvation r;
-    r.ID = 0;
+    Reservation r;
+    r.ID = 0;                       // 0 asks the manager for the next free ID
     r.StudentID = studentId;
     r.StudentName = name;
     r.ResourceID = resId;
@@ -99,16 +100,21 @@ void handleSort(Resources &resources) {
     cout << "\n1. By ID 2. By Name 3. By Type\n";
     string c = readLine("Enter Choice: ");
     if (c == "1")
-        resources.SortList("ID");
+        resources.SortList("id");
     else if (c == "2")
-        resources.SortList("Name");
+        resources.SortList("name");
     else if (c == "3")
-        resources.SortList("Type");
+        resources.SortList("type");
     else {
         cout << "Invalid choice.\n";
-    return;}
+        return;
+    }
     resources.DisplayResources();
 }
+
+}
+
+// namespace
 
 int main(int argc, char **argv) {
     string resourcesFile = (argc > 1) ? argv[1] : "data/resources.txt";
@@ -149,8 +155,7 @@ int main(int argc, char **argv) {
                      << " | " << r.Date << "\n";
 
             }
-    }
-    else if (choice == "8") {
+        } else if (choice == "8") {
             handleSort(resources);
         } else if (choice == "9") {
             manager.GenerateReport();
