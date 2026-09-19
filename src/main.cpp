@@ -47,12 +47,6 @@ static void createReservation(ReservationManagement& manager, Resources& resourc
     string name     = readLine("Student Name: ");
     string resource = readLine("Resource ID: ");
 
-    // Error handling: reject unknown resources before creating anything.
-    if (resources.findResource(resource) == nullptr){
-        cout << "ERROR: Resource ID '" << resource << "' does not exist." << endl;
-        return;
-    }
-
     string date = readLine("Reservation Date (MM/DD/YYYY): ");
 
     Reservation r;
@@ -105,7 +99,7 @@ int main(){
     if (!resources.LoadResources("data/resources.txt")){
         cout << "WARNING: Continuing with an empty resource list." << endl;
     } else {
-        cout << "Loaded " << resources.getCount() << " resources." << endl;
+        cout << "Loaded resources." << endl;
     }
 
     // Load any pre-existing reservations from file.
