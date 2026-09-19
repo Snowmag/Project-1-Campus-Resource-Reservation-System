@@ -17,13 +17,13 @@ static string trim(string s){
 }
 
 Resources::Resources(){
-    // std::vector self-initialises to empty; nothing else needed.
+    
 }
 
 // Load resources from a '|' delimited file:  ID|Name|Type|Availability
 // Availability: 1 = available, 0 = unavailable. Lines starting with # are ignored.
 // Returns false if the file cannot be opened.
-bool Resources::LoadResources(const string& filename){
+bool Resources::LoadResources(string filename){
     ifstream file(filename);
     if (!file.is_open()){
         cout << "ERROR: Could not open resource file: " << filename << endl;
@@ -96,7 +96,7 @@ void Resources::DisplayResources() const{
 }
 
 // Linear search by resource ID. Returns nullptr if not found.
-Resource* Resources::findResource(const string& ID){
+Resource* Resources::findResource(string ID){
     for (Resource& r : this->ResourceList){
         if (r.ID == ID){
             return &r;
@@ -106,10 +106,10 @@ Resource* Resources::findResource(const string& ID){
 }
 
 // Flip a resource's availability flag. Returns false if the ID is unknown.
-bool Resources::setAvailability(const string& ID, bool available){
+bool Resources::setAvailability(string ID, bool available){
     Resource* r = findResource(ID);
     if (r == nullptr) return false;
-    r->Availability = available;
+    r->Availability = true;
     return true;
 }
 

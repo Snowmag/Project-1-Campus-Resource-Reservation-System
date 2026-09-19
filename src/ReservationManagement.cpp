@@ -20,7 +20,24 @@ ReservationManagement::ReservationManagement(){
 }
 
 ReservationManagement::~ReservationManagement(){
+
 }
+
+ReservationStatus ReservationManagement::CreateReservation(Reservation r){
+    // Prevent duplicate reservation IDs among active reservations.
+    if (findReservation(r.ID) != nullptr){
+        return ReservationStatus::DuplicateID;
+    }
+
+    if (validateReservation(r)){
+        ReservationsList.Insert(r);
+        return ReservationStatus::Created;
+    }
+
+    waitlist.Insert(r);
+    return ReservationStatus::Waitlisted;
+}
+
 
 // Load reservations from a '|' delimited file:
 //   ID|StudentID|StudentName|ResourceID|Date
@@ -65,7 +82,7 @@ int ReservationManagement::LoadReservations(const string& filename){
         r.ResourceID  = trimField(res);
         r.Date        = trimField(date);
 
-        switch (CreateReservation(r)){
+        switch (this->CreateReservation(r)){
             case ReservationStatus::Created:     active++;     break;
             case ReservationStatus::Waitlisted:  waitlisted++; break;
             case ReservationStatus::DuplicateID: skipped++;    break;
@@ -90,21 +107,6 @@ bool ReservationManagement::validateReservation(Reservation r){
     }
     return true;
 };
-
-ReservationStatus ReservationManagement::CreateReservation(Reservation r){
-    // Prevent duplicate reservation IDs among active reservations.
-    if (findReservation(r.ID) != nullptr){
-        return ReservationStatus::DuplicateID;
-    }
-
-    if (validateReservation(r)){
-        ReservationsList.Insert(r);
-        return ReservationStatus::Created;
-    }
-
-    waitlist.Insert(r);
-    return ReservationStatus::Waitlisted;
-}
 
 void ReservationManagement::CancelReservation(int ID){
     ReservationNode* node = findReservation(ID);

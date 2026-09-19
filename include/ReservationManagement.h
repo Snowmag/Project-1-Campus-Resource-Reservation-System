@@ -50,17 +50,30 @@ private:
     int size;
 };
 
+enum ReservationStatus{
+    DuplicateID,
+    Created,
+    Waitlisted
+};
+
 class ReservationManagement{
 public:
     ReservationManagement();
     ~ReservationManagement();
 
-    void CreateReservation(Reservation r);
+    ReservationStatus CreateReservation(Reservation r);
     void CancelReservation(int ID);
+    void UndoCancellation();
+    
     bool validateReservation(Reservation r);
     ReservationNode* findReservation(int ID);
 
+    int LoadReservations(const string& filename);
     void GenerateReport();
+
+    void DisplayReservations();
+    void DisplayWaitlist();
+    void DisplayCancellations();
 
 private:
     Reservations ReservationsList;

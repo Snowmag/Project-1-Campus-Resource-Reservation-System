@@ -6,12 +6,12 @@
 
 using namespace std;
 
-class Student{
+struct Student{
     int ID;
     string Name;
 };
 
-class Resource{
+struct Resource{
     string ID;
     string Name;
     string Type;
@@ -19,12 +19,16 @@ class Resource{
 };
 
 class Resources{
-    void LoadResources();
-    void DisplayResources();
-    Resource findResource(string ID);
-    list<Resource> SortList();
+public:
+    bool LoadResources(string filename);
+    void DisplayResources() const;
+    bool setAvailability(string ID, bool available);
+    Resource* findResource(string ID);
+    int getCount() const;
 
-    list<Resource> Resources;
+private:
+    list<Resource> SortList();
+    list<Resource> ResourceList;
 };
 
 
