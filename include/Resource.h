@@ -20,6 +20,8 @@ struct Resource{
 
 class Resources{
 public:
+    Resources();
+
     bool LoadResources(string filename);
     void DisplayResources() const;
     bool setAvailability(string ID, bool available);
