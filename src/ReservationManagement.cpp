@@ -97,6 +97,8 @@ int ReservationManagement::LoadReservations(const string& filename){
     return active;
 }
 
+//Checking our reservation against the list,
+//Seeing for matching date and reservation, returning a bool
 bool ReservationManagement::validateReservation(Reservation r){
     //Reservation is only valid when no current reservations have the
     //same resourceID booked on the same date.
@@ -111,6 +113,7 @@ bool ReservationManagement::validateReservation(Reservation r){
     return true;
 };
 
+//Moves a reservation from the reservation list to the cancellation stack
 void ReservationManagement::CancelReservation(int ID){
     //Wait list check, promotes the olderst waiting request
     //if the resource or date is opened
@@ -214,6 +217,7 @@ Waitlist::Waitlist(){
     this->size = 0;
 }
 
+//Makes sure we don't leave dangling pointers upon deletion if that would ever come up.
 Waitlist::~Waitlist(){
 
     ReservationNode* current = this->head;
@@ -225,6 +229,7 @@ Waitlist::~Waitlist(){
 
 }
 
+//Inserts a reservation at the head
 void Waitlist::Insert(Reservation r){
     ReservationNode *node = new ReservationNode;
 
@@ -295,6 +300,8 @@ void Waitlist::Display(){
 
 }
 
+//Size has been counting the insertion and removal calls,
+//if everything works like it should, itll return the correct value
 int Waitlist::getSize() const{
     return this->size;
 }
@@ -306,6 +313,7 @@ CancellationHistory::CancellationHistory(){
     this->size = 0;
 }
 
+//Making sure we handle deletion to avoid dangling pointers.
 CancellationHistory::~CancellationHistory(){
 
     ReservationNode* current = this->head;
@@ -317,7 +325,7 @@ CancellationHistory::~CancellationHistory(){
 
 }
 
-//Doesn't use Previous Pointer as its not needed
+//Doesn't use Previous Pointer as its not needed, inseert at head
 void CancellationHistory::Insert(Reservation r){
     ReservationNode *node = new ReservationNode;
 
