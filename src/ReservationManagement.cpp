@@ -28,7 +28,8 @@ ReservationStatus ReservationManagement::CreateReservation(Reservation r){
     if (findReservation(r.ID) != nullptr){
         return ReservationStatus::DuplicateID;
     }
-
+    //If resource/date isn't already reserved add to active 
+    //reservations, otherwise add to waitlist
     if (validateReservation(r)){
         ReservationsList.Insert(r);
         return ReservationStatus::Created;
@@ -97,6 +98,8 @@ int ReservationManagement::LoadReservations(const string& filename){
 }
 
 bool ReservationManagement::validateReservation(Reservation r){
+    //Reservation is only valid when no current reservations have the
+    //same resourceID booked on the same date.
     ReservationNode* current = ReservationsList.head;
     while(current != nullptr){
         if (r.Date == current->reservation.Date &&
@@ -109,6 +112,8 @@ bool ReservationManagement::validateReservation(Reservation r){
 };
 
 void ReservationManagement::CancelReservation(int ID){
+    //Wait list check, promotes the olderst waiting request
+    //if the resource or date is opened
     ReservationNode* node = findReservation(ID);
 
     if (node == nullptr){
@@ -154,6 +159,7 @@ void ReservationManagement::UndoCancellation(){
 }
 
 //Linear search through linked list by Reservation ID
+//Complexity: O(n) - worst case goes through the entire list
 ReservationNode* ReservationManagement::findReservation(int ID){
     ReservationNode* current = ReservationsList.head;
 
@@ -181,6 +187,9 @@ void ReservationManagement::DisplayCancellations(){
 }
 
 //Generate report of reservations
+//Complexity: O(n) - counts the number of active reservations by 
+//going through the full linked list, waitlist and cancellation 
+//history sizes are O(1) because they are tracked by a variable.
 void ReservationManagement::GenerateReport(){
     cout << "------Reservation Report-----" << endl;
 
