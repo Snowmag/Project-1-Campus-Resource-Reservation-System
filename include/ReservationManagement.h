@@ -20,6 +20,12 @@ public:
 
     Reservation Peek();
 
+    ReservationNode* Oldest() const;
+
+    bool Contains(int ID) const;
+
+    bool RemoveByID(int ID);
+
     void Display();
 
     int getSize() const;
