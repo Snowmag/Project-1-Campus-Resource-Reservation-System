@@ -25,7 +25,7 @@ ReservationManagement::~ReservationManagement(){
 
 ReservationStatus ReservationManagement::CreateReservation(Reservation r){
     // Prevent duplicate reservation IDs among active reservations.
-    if (findReservation(r.ID) != nullptr){
+    if (findReservation(r.ID) != nullptr || waitlist.Contains(r.ID)){
         return ReservationStatus::DuplicateID;
     }
     //If resource/date isn't already reserved add to active 
@@ -132,12 +132,16 @@ void ReservationManagement::CancelReservation(int ID){
 
     //Waiting List Check - promote the oldest waiting request if the freed
     //resource/date now satisfies it.
-    if (waitlist.getSize() > 0 && validateReservation(waitlist.Peek())){
-        Reservation promoted = waitlist.Peek();
-        ReservationsList.Insert(promoted);
-        waitlist.Pop();
-        cout << "Waitlisted reservation [" << promoted.ID
-             << "] has been assigned the freed resource." << endl;
+    ReservationNode* waiting = waitlist.Oldest();
+    while (waiting != nullptr){
+        if (validateReservation(waiting->reservation)){
+            Reservation promoted = waiting->reservation;
+            ReservationsList.Insert(promoted);
+            waitlist.RemoveByID(promoted.ID);
+            cout << "Waitlisted Reservation [" << promoted.ID << "] has been assigned the freed resource." << endl;
+            break;
+        }
+        waiting = waiting->previous;
     }
 }
 
@@ -149,6 +153,11 @@ void ReservationManagement::UndoCancellation(){
     }
 
     Reservation r = cancellations.Peek();
+
+    if (findReservation(r.ID) != nullptr || waitlist.Contains(r.ID)){
+        cout << "ERROR: Cannot restore reservation [" << r.ID << "] - a reservation with that ID already exists." << endl;
+        return;
+    }
 
     // Only restore if the resource is still free for that date.
     if (validateReservation(r)){
@@ -264,6 +273,41 @@ void Waitlist::Pop(){
     delete old;
 
     this->size--;
+}
+
+ReservationNode* Waitlist::Oldest() const{
+    return this->tail;
+}
+
+bool Waitlist::Contains(int ID) const{
+    ReservationNode* current = this->head;
+
+    while(current != nullptr){
+        if(current->reservation.ID == ID) return true;
+        current = current->next;
+    }
+    return false;
+}
+
+bool Waitlist::RemoveByID(int ID){
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        if (current->reservation.ID == ID){
+            if (current->previous != nullptr){current->previous->next = current->next;
+            } else {
+                this->head = current->next;
+            }
+            if (current->next != nullptr){current->next->previous = current->previous;
+            } else {this->tail = current->previous;
+            }
+
+            delete current;
+            this->size--;
+            return true;
+        }
+        current = current->next;
+    }
+    return false;
 }
 
 //The next thing to serve is always the oldest, peek the tail
