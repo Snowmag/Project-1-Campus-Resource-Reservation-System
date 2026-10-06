@@ -47,6 +47,11 @@ static void createReservation(ReservationManagement& manager, Resources& resourc
     string name     = readLine("Student Name: ");
     string resource = readLine("Resource ID: ");
 
+    if (!resources.HasResource(resource)){
+        cout << "ERROR: Resource [" << resource << "] does not exist." << endl;
+        return;
+    }
+
     string date = readLine("Reservation Date (MM/DD/YYYY): ");
 
     Reservation r;
