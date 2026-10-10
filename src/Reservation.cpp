@@ -112,6 +112,7 @@ vector<Reservation> Reservations::ToVector(){
     return records;
 }
 
+//Replace with merge sort vvvv
 void SortReservationsByID(vector<Reservation>& v){
     for (size_t i = 1; i < v.size(); i++){
         Reservation key = v[i];
@@ -124,6 +125,7 @@ void SortReservationsByID(vector<Reservation>& v){
     }
 }
 
+//Replace with merge sort vvvv
 void SortReservationsByStudent(vector<Reservation>& v){
     for (size_t i = 1; i < v.size(); i++){
         Reservation key = v[i];
@@ -135,6 +137,7 @@ void SortReservationsByStudent(vector<Reservation>& v){
         v[j] = key;
     }
 }
+//Replace with merge sort ^^^^
 
 int BinarySearchReservationID(const vector<Reservation>& sortedByID, int id){
     int low  = 0;
