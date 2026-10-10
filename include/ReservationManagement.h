@@ -74,6 +74,10 @@ public:
     bool validateReservation(Reservation r);
     ReservationNode* findReservation(int ID);
 
+    bool SearchReservationByID(int id, Reservation& found);
+
+    vector<Reservation> SearchReservationsByStudent(int studentID);
+
     int LoadReservations(const string& filename);
     void GenerateReport();
 

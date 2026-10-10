@@ -101,3 +101,71 @@ void Reservations::Display(){
     }
     cout << "-----------------------------------" << endl;
 }
+
+vector<Reservation> Reservations::ToVector(){
+    vector<Reservation> records;
+    ReservationNode* current = this->head;
+    while(current != nullptr){
+        records.push_back(current->reservation);
+        current = current->next;
+    }
+    return records;
+}
+
+void SortReservationsByID(vector<Reservation>& v){
+    for (size_t i = 1; i < v.size(); i++){
+        Reservation key = v[i];
+        size_t j = i;
+        while (j > 0 && v[j - 1].ID > key.ID){
+            v[j] = v[j - 1];
+            j--;
+        }
+        v[j] = key;
+    }
+}
+
+void SortReservationsByStudent(vector<Reservation>& v){
+    for (size_t i = 1; i < v.size(); i++){
+        Reservation key = v[i];
+        size_t j = i;
+        while (j > 0 && v[j - 1].StudentID > key.StudentID){
+            v[j] = v[j - 1];
+            j--;
+        }
+        v[j] = key;
+    }
+}
+
+int BinarySearchReservationID(const vector<Reservation>& sortedByID, int id){
+    int low  = 0;
+    int high = (int)sortedByID.size() - 1;
+
+    while (low <= high){
+        int mid = low + (high - low) / 2;
+
+        if (sortedByID[mid].ID == id){
+            return mid;
+        } else if (sortedByID[mid].ID < id){
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1;
+}
+
+int LowerBoundStudentID(const vector<Reservation>& sortedByStudent, int studentID){
+    int low  = 0;
+    int high = (int)sortedByStudent.size();
+
+    while (low < high){
+        int mid = low + (high - low) / 2;
+
+        if (sortedByStudent[mid].StudentID < studentID){
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+    return low;
+}

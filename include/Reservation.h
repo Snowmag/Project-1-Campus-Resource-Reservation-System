@@ -2,6 +2,7 @@
 #define RESERVATION
 
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -35,9 +36,18 @@ public:
 
     void Display();
 
+    vector<Reservation> ToVector();
+
     //Linked List Implimentation
     ReservationNode *head;
     ReservationNode *tail;
 };
+
+void SortReservationsByID(vector<Reservation>& v);
+void SortReservationsByStudent(vector<Reservation>& v);
+
+int BinarySearchReservationID(const vector<Reservation>& sortedByID, int id);
+
+int LowerBoundStudentID(const vector<Reservation>& sortedByStudent, int studentID);
 
 #endif

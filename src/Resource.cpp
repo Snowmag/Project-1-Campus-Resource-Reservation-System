@@ -77,3 +77,46 @@ bool Resources::HasResource(const string& id) const{
 const vector<Resource>& Resources::GetAll() const{
     return inventory;
 }
+
+//Replace with merge sort (sort by ID) vvvv
+void SortResourcesByID(vector<Resource>& v){
+    for (size_t i = 1; i < v.size(); i++){
+        Resource key = v[i];
+        size_t j = i;
+        while (j > 0 && v[j - 1].ID > key.ID){
+            v[j] = v[j - 1];
+            j--;
+        }
+        v[j] = key;
+    }
+}
+//Replace with merge sort sort by ID) ^^^^
+
+int BinarySearchResourceID(const vector<Resource>& sortedByID, const string& id){
+    int low  = 0;
+    int high = (int)sortedByID.size() - 1;
+
+    while (low <= high){
+        int mid = low + (high - low) / 2;
+
+        if (sortedByID[mid].ID == id){
+            return mid;
+        } else if (sortedByID[mid].ID < id){
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1;
+}
+
+bool Resources::SearchByID(const string& id, Resource& found) const{
+    vector<Resource> sorted = inventory;
+    SortResourcesByID(sorted);
+
+    int index = BinarySearchResourceID(sorted, id);
+    if (index < 0) return false;
+
+    found = sorted[index];
+    return true;
+}

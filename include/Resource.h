@@ -19,6 +19,10 @@ struct Resource{
     string Status;
 };
 
+void SortResourcesByID(vector<Resource>& v);
+
+int BinarySearchResourceID(const vector<Resource>& sortedByID, const string& id);
+
 class Resources{
 public:
     Resources();
@@ -28,6 +32,8 @@ public:
 
     bool HasResource(const string& id) const;
     const vector<Resource>& GetAll() const;
+
+    bool SearchByID(const string& id, Resource& found) const;
 
 private:
     string ResourceList;

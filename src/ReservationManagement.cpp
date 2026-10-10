@@ -185,6 +185,30 @@ ReservationNode* ReservationManagement::findReservation(int ID){
     //No match found
     return nullptr;
 }
+//Search active reservations by reservation ID using binary search
+bool ReservationManagement::SearchReservationByID(int id, Reservation& found){
+    vector<Reservation> records = ReservationsList.ToVector();
+    SortReservationsByID(records);
+
+    int index = BinarySearchReservationID(records, id);
+    if (index < 0) return false;
+
+    found = records[index];
+    return true;
+}
+
+vector<Reservation> ReservationManagement::SearchReservationsByStudent(int studentID){
+    vector<Reservation> records = ReservationsList.ToVector();
+    SortReservationsByStudent(records);
+
+    vector<Reservation> matches;
+    int index = LowerBoundStudentID(records, studentID);
+    while (index < (int)records.size() && records[index].StudentID == studentID){
+        matches.push_back(records[index]);
+        index++;
+    }
+    return matches;
+}
 
 void ReservationManagement::DisplayReservations(){
     ReservationsList.Display();

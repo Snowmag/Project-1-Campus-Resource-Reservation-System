@@ -80,6 +80,66 @@ static void cancelReservation(ReservationManagement& manager){
     manager.CancelReservation(id);   // prints its own success / error message
 }
 
+//binary search
+static void printReservation(const Reservation& r){
+    cout << "[" << r.ID << "] | "
+         << r.StudentName << "(" << r.StudentID << ") | "
+         << r.ResourceID << " | "
+         << r.Date << endl;
+}
+
+static void searchMenu(ReservationManagement& manager, Resources& resources){
+    cout << "\n----- Search -----" << endl;
+    cout << "1. Search Resource by ID"                  << endl;
+    cout << "2. Search Reservation by ID"               << endl;
+    cout << "3. Search Reservations by Student ID"      << endl;
+    cout << "4. Back"                                   << endl;
+
+    int choice = readInt("Enter Choice: ");
+
+    switch (choice){
+        case 1: {
+            string id = readLine("Resource ID: ");
+            Resource found;
+            if (resources.SearchByID(id, found)){
+                cout << "Found: " << found.ID << " | " << found.Name << " | "
+                     << found.Type << " | " << found.Status << endl;
+            } else {
+                cout << "No resource found with ID '" << id << "'." << endl;
+            }
+            break;
+        }
+        case 2: {
+            int id = readInt("Reservation ID: ");
+            Reservation found;
+            if (manager.SearchReservationByID(id, found)){
+                cout << "Found: ";
+                printReservation(found);
+            } else {
+                cout << "No active reservation found with ID " << id << "." << endl;
+            }
+            break;
+        }
+        case 3: {
+            int studentID = readInt("Student ID: ");
+            vector<Reservation> matches = manager.SearchReservationsByStudent(studentID);
+            if (matches.empty()){
+                cout << "No active reservations found for student " << studentID << "." << endl;
+            } else {
+                cout << matches.size() << " reservation(s) found:" << endl;
+                for (size_t i = 0; i < matches.size(); i++){
+                    printReservation(matches[i]);
+                }
+            }
+            break;
+        }
+        case 4:
+            break;
+        default:
+            cout << "Invalid choice. Please select 1-4." << endl;
+    }
+}
+
 /* ---------- menu ---------- */
 
 static void printMenu(){
@@ -93,6 +153,7 @@ static void printMenu(){
     cout << "7. Undo Cancellation"         << endl;
     cout << "8. Generate Report"           << endl;
     cout << "9. Exit"                      << endl;
+    cout << "10. Search "                  << endl;
 }
 
 int main(){
@@ -124,11 +185,12 @@ int main(){
             case 6: manager.DisplayCancellations();        break;
             case 7: manager.UndoCancellation();            break;
             case 8: manager.GenerateReport();              break;
+            case 10: searchMenu(manager, resources);       break;
             case 9:
                 cout << "Goodbye!" << endl;
                 return 0;
             default:
-                cout << "Invalid choice. Please select 1-9." << endl;
+                cout << "Invalid choice. Please select 1-10." << endl;
         }
     }
 }
