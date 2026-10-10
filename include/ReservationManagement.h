@@ -4,7 +4,9 @@
 #include <string>
 #include <queue>
 #include <stack>
+#include <vector>
 #include "Reservation.h"
+#include "Resource.h"
 
 using namespace std;
 
@@ -50,6 +52,18 @@ private:
     int size;
 };
 
+//One row of report statistics for a single resource
+struct ResourceStats{
+    string ResourceID;
+    string Name;
+    string Type;
+    string Status;
+    int ActiveReservations = 0;   //reservation linked list
+    int Waiting = 0;              //waiting-list queue
+    int Requests() const { return ActiveReservations + Waiting; }
+};
+
+
 enum ReservationStatus{
     DuplicateID,
     Created,
@@ -69,6 +83,12 @@ public:
     ReservationNode* findReservation(int ID);
 
     int LoadReservations(const string& filename);
+
+    //Reports (menu option 8)
+    void ActiveReservationsReport(const Resources& resources) const;    //sorted by date
+    void ResourceUtilizationReport(const Resources& resources) const;   //reservations per resource
+    void MostRequestedReport(const Resources& resources, int top = 5) const;
+    void WaitingListReport(const Resources& resources) const;           //students waiting per resource
     void GenerateReport();
 
     void DisplayReservations();
@@ -79,6 +99,10 @@ private:
     Reservations ReservationsList;
     Waitlist waitlist;
     CancellationHistory cancellations;
+
+    //Counts reservations and waiting requests per resource for the reports
+    vector<ResourceStats> BuildStats(const Resources& resources) const;
+
 
 };
 

@@ -75,6 +75,28 @@ static void cancelReservation(ReservationManagement& manager){
     manager.CancelReservation(id);   // prints its own success / error message
 }
 
+// -------------- Report Generator-----------------
+static void generateReport(const ReservationManagement& manager, const Resources& resources){
+    cout << "\n----- Generate Report -----" << endl;
+    cout << "1. Active Reservations"            << endl;
+    cout << "2. Resource Utilization"           << endl;
+    cout << "3. Most Requested Resources"       << endl;
+    cout << "4. Waiting-List Statistics"        << endl;
+    cout << "5. Full Report (all of the above)" << endl;
+
+    switch (readInt("Enter Choice: ")){
+        case 1: manager.ActiveReservationsReport(resources);  break;
+        case 2: manager.ResourceUtilizationReport(resources); break;
+        case 3: manager.MostRequestedReport(resources);       break;
+        case 4: manager.WaitingListReport(resources);         break;
+        case 5: manager.GenerateReport(resources);            break;
+        default:
+            cout << "Invalid choice. Please select 1-5." << endl;
+    }
+}
+
+
+
 /* ---------- menu ---------- */
 
 static void printMenu(){
@@ -118,7 +140,7 @@ int main(){
             case 5: manager.DisplayWaitlist();             break;
             case 6: manager.DisplayCancellations();        break;
             case 7: manager.UndoCancellation();            break;
-            case 8: manager.GenerateReport();              break;
+            case 8: manager.GenerateReport(manager, resources);              break;
             case 9:
                 cout << "Goodbye!" << endl;
                 return 0;
